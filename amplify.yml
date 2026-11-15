@@ -1,0 +1,24 @@
+version: 1
+applications:
+  - appRoot: deadline-domino
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            # Next.js 16 needs Node 20.9+.
+            - nvm install 22 && nvm use 22
+            - npm ci
+        build:
+          commands:
+            # Amplify console env vars only exist at build time; write them to
+            # .env.production so the server routes (Gemini, MongoDB) can read them at runtime.
+            - env | grep -E '^(GEMINI_API_KEY|GEMINI_MODEL|MONGODB_URI|MONGODB_DB)=' >> .env.production || true
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - .next/cache/**/*
+          - node_modules/**/*
