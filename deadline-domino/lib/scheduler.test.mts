@@ -5,6 +5,7 @@ import {
   applyScenario,
   buildSchedule,
   DEFAULT_HOURS_FREE,
+  extendAvailability,
   diffSchedules,
   parallelUniverses,
   presets,
@@ -141,4 +142,17 @@ test("days missing from availability get default free hours", () => {
 test("energy drains on back-to-back heavy days", () => {
   const r = buildSchedule([task({ estimatedHours: 6, dueDate: "2026-11-18" })], days(16, [2, 2, 2]));
   assert.ok(r.days[2].energy < r.days[0].energy);
+});
+
+test("typical week fills days through the last deadline, keeping explicit days", () => {
+  const week = [1, 2, 3, 4, 5, 6, 7]; // Sun..Sat
+  const out = extendAvailability(
+    [{ date: "2026-11-16", hoursFree: 9 }], // Monday override
+    week,
+    [task({ dueDate: "2026-12-05" })],
+  );
+  assert.equal(out[0].hoursFree, 9); // kept
+  assert.equal(out[1].hoursFree, 3); // Tue from template
+  assert.equal(out.at(-1)!.date, "2026-12-05");
+  assert.equal(out.at(-1)!.hoursFree, 7); // Sat
 });

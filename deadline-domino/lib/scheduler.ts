@@ -60,6 +60,37 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 const minDate = (dates: ISODate[]) => dates.reduce((a, b) => (b < a ? b : a));
 const maxDate = (dates: ISODate[]) => dates.reduce((a, b) => (b > a ? b : a));
 
+// ---------- Typical week ----------
+
+/** Free hours per weekday, indexed like Date.getUTCDay(): 0 = Sunday ... 6 = Saturday. */
+export type WeekTemplate = number[];
+export const DEFAULT_WEEK: WeekTemplate = [5, 4, 4, 4, 4, 3, 5];
+export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function dayOfWeek(date: ISODate): number {
+  return new Date(`${date}T00:00:00Z`).getUTCDay();
+}
+
+/**
+ * Fill every day from the plan start through the last deadline (at least 2 weeks) using
+ * the typical week. Days already in `availability` (explicit overrides) are kept as-is.
+ */
+export function extendAvailability(
+  availability: Availability[],
+  week: WeekTemplate,
+  tasks: Task[],
+  start: ISODate = availability.length ? minDate(availability.map((a) => a.date)) : todayISO(),
+): Availability[] {
+  const lastDue = tasks.length ? maxDate(tasks.map((t) => t.dueDate)) : start;
+  const end = maxDate([addDays(start, 13), lastDue, ...availability.map((a) => a.date)]);
+  const have = new Map(availability.map((a) => [a.date, a.hoursFree]));
+  const out: Availability[] = [];
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    out.push({ date: d, hoursFree: have.get(d) ?? week[dayOfWeek(d)] ?? DEFAULT_HOURS_FREE });
+  }
+  return out;
+}
+
 // ---------- Scheduler ----------
 
 export interface ScheduleOptions {

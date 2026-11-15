@@ -12,7 +12,13 @@ export async function GET(request: Request) {
   try {
     const doc = await (await plans()).findOne({ _id: id });
     if (!doc) return Response.json({ error: "not-found" }, { status: 404 });
-    return Response.json({ tasks: doc.tasks, availability: doc.availability, scenarios: doc.scenarios ?? [] });
+    return Response.json({
+      tasks: doc.tasks,
+      availability: doc.availability,
+      scenarios: doc.scenarios ?? [],
+      courses: doc.courses ?? [],
+      weekTemplate: doc.weekTemplate ?? null,
+    });
   } catch (err) {
     console.error("Load plan failed:", err);
     return Response.json({ error: "Database unreachable" }, { status: 502 });
@@ -22,7 +28,14 @@ export async function GET(request: Request) {
 // PUT /api/plan  { id, tasks, availability, scenarios }  → upsert
 export async function PUT(request: Request) {
   if (!hasDb()) return Response.json({ error: "no-db" }, { status: 503 });
-  let body: { id: string; tasks: Task[]; availability: Availability[]; scenarios?: Scenario[] };
+  let body: {
+    id: string;
+    tasks: Task[];
+    availability: Availability[];
+    scenarios?: Scenario[];
+    courses?: string[];
+    weekTemplate?: number[];
+  };
   try {
     body = await request.json();
   } catch {
@@ -34,10 +47,15 @@ export async function PUT(request: Request) {
 
   // Don't store computed schedules, only the inputs (they're cheap to recompute).
   const scenarios = (body.scenarios ?? []).slice(0, 50).map(({ name, changes, explanation }) => ({ name, changes, explanation }));
+  const courses = (Array.isArray(body.courses) ? body.courses : []).filter((c) => typeof c === "string").slice(0, 50);
+  const weekTemplate =
+    Array.isArray(body.weekTemplate) && body.weekTemplate.length === 7 && body.weekTemplate.every((h) => typeof h === "number" && h >= 0 && h <= 24)
+      ? body.weekTemplate
+      : undefined;
   try {
     await (await plans()).updateOne(
       { _id: body.id },
-      { $set: { tasks: body.tasks, availability: body.availability, scenarios, updatedAt: new Date() } },
+      { $set: { tasks: body.tasks, availability: body.availability, scenarios, courses, ...(weekTemplate && { weekTemplate }), updatedAt: new Date() } },
       { upsert: true },
     );
     return Response.json({ ok: true });

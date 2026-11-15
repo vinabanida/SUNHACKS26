@@ -30,7 +30,6 @@ export default function Heatmap({
   week,
   onWeekChange,
   ripple,
-  onHoursChange,
   onMoveDeadline,
 }: {
   days: DaySchedule[];
@@ -38,7 +37,6 @@ export default function Heatmap({
   week: number;
   onWeekChange: (week: number) => void;
   ripple: { origin: number; key: number };
-  onHoursChange: (date: ISODate, hours: number) => void;
   onMoveDeadline: (taskId: string, date: ISODate) => void;
 }) {
   const [dropTarget, setDropTarget] = useState<ISODate | null>(null);
@@ -171,7 +169,7 @@ export default function Heatmap({
                   )}
                 </ul>
 
-                <div className="mt-2" title={`Energy ${day.energy}%`}>
+                <div className="mt-auto pt-2" title={`Energy left after this day: ${day.energy}%`}>
                   <div className="h-1.5 w-full rounded-full bg-black/10">
                     <div
                       className="h-1.5 rounded-full transition-all duration-500"
@@ -183,24 +181,12 @@ export default function Heatmap({
                   </div>
                 </div>
 
-                <label className="mt-2 block text-[11px] text-slate-700">
-                  <span className="sr-only">Free hours on {weekday}</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={12}
-                    step={0.5}
-                    value={day.hoursFree}
-                    onChange={(e) => onHoursChange(day.date, Number(e.target.value))}
-                    className="w-full accent-slate-800"
-                  />
-                </label>
               </div>
             );
           })}
         </div>
       </div>
-      <p className="mt-1 text-xs text-slate-500">Tip: drag a dark &quot;Due&quot; tag to another day to move that deadline, or slide a day&apos;s free hours.</p>
+      <p className="mt-1 text-xs text-slate-500">Tip: drag a dark &quot;Due&quot; tag to another day to move that deadline. The thin bar at the bottom of each day is your energy left after that day.</p>
     </section>
   );
 }

@@ -7,6 +7,8 @@ export interface PlanDoc {
   tasks: Task[];
   availability: Availability[];
   scenarios: Scenario[]; // saved what-ifs: name, changes, explanation
+  courses?: string[];
+  weekTemplate?: number[]; // free hours per weekday, Sun..Sat
   updatedAt: Date;
 }
 
